@@ -1,20 +1,18 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
-using YG;
 
 public class YandexManager : MonoBehaviour
 {
     public static YandexManager Instance { get; private set; }
 
-    [Header("Настройки")]
-    [SerializeField] private bool useCloudSave = true;
+    // Заглушки для совместимости (GameManager их не использует, но пусть будут)
+    public bool IsAuthorized => false;
+    public string PlayerName => "Игрок";
+    public string PlayerId => "";
 
-    public bool IsAuthorized => YG2.Player.auth;
-    public string PlayerName => YG2.Player.name;
-    public string PlayerId => YG2.Player.id;
-
-    public System.Action OnAuthorizedChanged;
-    public System.Action OnDataLoaded;
+    public event Action OnAuthorizedChanged;
+    public event Action OnDataLoaded;
 
     private void Awake()
     {
@@ -28,84 +26,32 @@ public class YandexManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
-        YG2.OnGetSDKData += OnSDKReady;
-        YG2.OnAuthSuccess += OnAuthSuccess;
-        YG2.OnAuthFail += OnAuthFail;
     }
 
-    private void OnDestroy()
+    private void Start()
     {
-        YG2.OnGetSDKData -= OnSDKReady;
-        YG2.OnAuthSuccess -= OnAuthSuccess;
-        YG2.OnAuthFail -= OnAuthFail;
-    }
-
-    private void OnSDKReady()
-    {
-        Debug.Log("[YandexManager] SDK готов");
-        YG2.GameReadyAPI();
         OnDataLoaded?.Invoke();
         OnAuthorizedChanged?.Invoke();
     }
 
-    private void OnAuthSuccess()
-    {
-        Debug.Log("[YandexManager] Авторизация успешна");
-        OnAuthorizedChanged?.Invoke();
-    }
-
-    private void OnAuthFail()
-    {
-        Debug.Log("[YandexManager] Авторизация не удалась");
-        OnAuthorizedChanged?.Invoke();
-    }
+    // ========== СОХРАНЕНИЕ (через PlayerPrefs) ==========
 
     public void SaveGameData(Dictionary<string, object> data)
     {
-        if (!useCloudSave) return;
-        if (YG2.Saves == null)
-        {
-            Debug.LogWarning("[YandexManager] YG2.Saves is null");
-            return;
-        }
-
         string json = JsonUtility.ToJson(new SerializableDictionaryWrapper(data));
-        YG2.Saves.cloudData = json;
-        YG2.SaveProgress();
-        Debug.Log("[YandexManager] Data saved to cloud");
+        PlayerPrefs.SetString("CloudSave", json);
+        PlayerPrefs.Save();
+        Debug.Log("[YandexManager] Данные сохранены локально (PlayerPrefs)");
     }
 
-    public void LoadGameData(System.Action<Dictionary<string, object>> callback)
+    public void LoadGameData(Action<Dictionary<string, object>> callback)
     {
-        if (!useCloudSave)
+        if (PlayerPrefs.HasKey("CloudSave"))
         {
-            callback?.Invoke(null);
-            return;
-        }
-
-        if (!YG2.isSDKEnabled)
-        {
-            System.Action onReady = null;
-            onReady = () =>
-            {
-                YG2.OnGetSDKData -= onReady;
-                LoadGameDataInternal(callback);
-            };
-            YG2.OnGetSDKData += onReady;
-            return;
-        }
-
-        LoadGameDataInternal(callback);
-    }
-
-    private void LoadGameDataInternal(System.Action<Dictionary<string, object>> callback)
-    {
-        if (YG2.Saves != null && !string.IsNullOrEmpty(YG2.Saves.cloudData))
-        {
+            string json = PlayerPrefs.GetString("CloudSave");
             try
             {
-                var wrapper = JsonUtility.FromJson<SerializableDictionaryWrapper>(YG2.Saves.cloudData);
+                var wrapper = JsonUtility.FromJson<SerializableDictionaryWrapper>(json);
                 if (wrapper != null && wrapper.keys != null)
                 {
                     var dict = new Dictionary<string, object>();
@@ -115,24 +61,24 @@ public class YandexManager : MonoBehaviour
                     return;
                 }
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
-                Debug.LogError($"Load error: {e.Message}");
+                Debug.LogError($"[YandexManager] Ошибка загрузки: {e.Message}");
             }
         }
         callback?.Invoke(null);
     }
 
+    // ========== АВТОРИЗАЦИЯ (заглушка) ==========
+
     public void OpenAuthDialog()
     {
-        if (!YG2.isSDKEnabled) return;
-        if (!YG2.Player.auth)
-            YG2.OpenAuthDialog();
-        else
-            Debug.Log("[YandexManager] Already authorized");
+        Debug.Log("[YandexManager] Авторизация недоступна (локальный режим)");
     }
 
-    [System.Serializable]
+    // ========== ВСПОМОГАТЕЛЬНЫЙ КЛАСС ДЛЯ СЕРИАЛИЗАЦИИ ==========
+
+    [Serializable]
     private class SerializableDictionaryWrapper
     {
         public List<string> keys = new List<string>();

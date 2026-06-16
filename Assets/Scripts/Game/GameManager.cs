@@ -30,7 +30,6 @@ public class GameManager : MonoBehaviour
 
     private string lastVisitDate = "";
     private int todayCoinsEarned = 0;
-    private bool isDataLoaded = false;
 
     private void Awake()
     {
@@ -52,7 +51,6 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         CheckNewDay();
-        isDataLoaded = true;
     }
 
     // ========== ЗАГРУЗКА / СОХРАНЕНИЕ ==========
@@ -61,12 +59,10 @@ public class GameManager : MonoBehaviour
     {
         if (YandexManager.Instance != null)
         {
-            // Пытаемся загрузить из облака
             YandexManager.Instance.LoadGameData(OnCloudDataLoaded);
         }
         else
         {
-            // Если YandexManager нет — из PlayerPrefs
             LoadFromPlayerPrefs();
             ApplyLoadedData();
         }
@@ -133,10 +129,8 @@ public class GameManager : MonoBehaviour
 
     private void SaveAllData()
     {
-        // Всегда сохраняем в PlayerPrefs как резерв
         SaveToPlayerPrefs();
 
-        // В облако
         if (YandexManager.Instance != null)
         {
             var data = new Dictionary<string, object>
@@ -197,7 +191,6 @@ public class GameManager : MonoBehaviour
 
     public void PerformAction(string actionType)
     {
-        // Начисляем монету
         if (todayCoinsEarned < maxDailyCoins)
         {
             Coins += coinsPerAction;

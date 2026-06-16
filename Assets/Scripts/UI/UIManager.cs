@@ -37,7 +37,6 @@ public class UIManager : MonoBehaviour
     {
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManager>();
-
         if (characterController == null)
             characterController = FindFirstObjectByType<CharacterController>();
 
