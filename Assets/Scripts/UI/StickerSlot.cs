@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(Image))]
+/// <summary>
+/// Ячейка для отображения части паззла (собрана/не собрана).
+/// </summary>
 public class StickerSlot : MonoBehaviour
 {
     [Header("Спрайты")]
-    [SerializeField] private Sprite collectedSprite;
-    [SerializeField] private Sprite emptySprite;
+    [SerializeField] private Sprite collectedSprite; // цветная часть
+    [SerializeField] private Sprite emptySprite;    // серая заглушка
 
     private Image image;
     private int index;
@@ -14,16 +16,33 @@ public class StickerSlot : MonoBehaviour
     private void Awake()
     {
         image = GetComponent<Image>();
+        if (image == null)
+        {
+            Debug.LogError("[StickerSlot] Компонент Image отсутствует!");
+            return;
+        }
+
+        // Если спрайты не назначены в инспекторе — загружаем из Resources
         if (collectedSprite == null)
-            collectedSprite = Resources.Load<Sprite>("Stickers/Collected");
+            collectedSprite = Resources.Load<Sprite>("Puzzle/part_0");
         if (emptySprite == null)
-            emptySprite = Resources.Load<Sprite>("Stickers/Empty");
+            emptySprite = Resources.Load<Sprite>("Puzzle/part_empty");
     }
 
-    public void SetIndex(int idx) { index = idx; }
+    public void SetIndex(int idx)
+    {
+        index = idx;
+        // Загружаем цветной спрайт по индексу
+        Sprite colored = Resources.Load<Sprite>($"Puzzle/part_{index}");
+        if (colored != null)
+            collectedSprite = colored;
+        else
+            Debug.LogWarning($"[StickerSlot] Не найден спрайт для части {index}");
+    }
+
     public void SetCollected(bool collected)
     {
-        if (image != null)
-            image.sprite = collected ? collectedSprite : emptySprite;
+        if (image == null) return;
+        image.sprite = collected ? collectedSprite : emptySprite;
     }
 }
