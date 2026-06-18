@@ -8,11 +8,11 @@ public class GameManager : MonoBehaviour
     [Header("Настройки")]
     [SerializeField] private int maxDailyCoins = 5;
     [SerializeField] private int coinsPerAction = 1;
-    [SerializeField] private int totalStickers = 8;
+    [SerializeField] private int totalPuzzleParts = 8;
 
     public int Coins { get; private set; }
     public int DaysCount { get; private set; }
-    public bool[] StickersCollected { get; private set; }
+    public bool[] PuzzlePartsCollected { get; private set; }
     public int SelectedCharacterIndex { get; private set; }
     public int SelectedBackgroundIndex { get; private set; }
     public int SelectedCostumeIndex { get; private set; }
@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour
 
     public System.Action OnCoinsChanged;
     public System.Action OnDaysChanged;
-    public System.Action OnStickersChanged;
+    public System.Action OnPuzzleChanged;
     public System.Action OnCharacterChanged;
     public System.Action OnBackgroundChanged;
     public System.Action OnCostumeChanged;
@@ -44,7 +44,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        StickersCollected = new bool[totalStickers];
+        PuzzlePartsCollected = new bool[totalPuzzleParts];
         LoadAllData();
     }
 
@@ -81,11 +81,11 @@ public class GameManager : MonoBehaviour
         if (data.ContainsKey("TodayCoinsEarned")) todayCoinsEarned = System.Convert.ToInt32(data["TodayCoinsEarned"]);
         if (data.ContainsKey("HugCount")) HugCount = System.Convert.ToInt32(data["HugCount"]);
 
-        if (data.ContainsKey("Stickers"))
+        if (data.ContainsKey("PuzzleParts"))
         {
-            string stickersStr = data["Stickers"].ToString();
-            for (int i = 0; i < totalStickers && i < stickersStr.Length; i++)
-                StickersCollected[i] = stickersStr[i] == '1';
+            string partsStr = data["PuzzleParts"].ToString();
+            for (int i = 0; i < totalPuzzleParts && i < partsStr.Length; i++)
+                PuzzlePartsCollected[i] = partsStr[i] == '1';
         }
 
         if (data.ContainsKey("SelectedCharacter")) SelectedCharacterIndex = System.Convert.ToInt32(data["SelectedCharacter"]);
@@ -101,8 +101,8 @@ public class GameManager : MonoBehaviour
         todayCoinsEarned = PlayerPrefs.GetInt("TodayCoinsEarned", 0);
         HugCount = PlayerPrefs.GetInt("HugCount", 0);
 
-        for (int i = 0; i < totalStickers; i++)
-            StickersCollected[i] = PlayerPrefs.GetInt($"Sticker_{i}", 0) == 1;
+        for (int i = 0; i < totalPuzzleParts; i++)
+            PuzzlePartsCollected[i] = PlayerPrefs.GetInt($"PuzzlePart_{i}", 0) == 1;
 
         SelectedCharacterIndex = PlayerPrefs.GetInt("SelectedCharacter", 0);
         SelectedBackgroundIndex = PlayerPrefs.GetInt("SelectedBackground", 0);
@@ -113,7 +113,7 @@ public class GameManager : MonoBehaviour
     {
         OnCoinsChanged?.Invoke();
         OnDaysChanged?.Invoke();
-        OnStickersChanged?.Invoke();
+        OnPuzzleChanged?.Invoke();
         OnCharacterChanged?.Invoke();
         OnBackgroundChanged?.Invoke();
         OnCostumeChanged?.Invoke();
@@ -135,10 +135,10 @@ public class GameManager : MonoBehaviour
             ["SelectedCostume"] = SelectedCostumeIndex,
             ["HugCount"] = HugCount
         };
-        char[] stickerChars = new char[totalStickers];
-        for (int i = 0; i < totalStickers; i++)
-            stickerChars[i] = StickersCollected[i] ? '1' : '0';
-        data["Stickers"] = new string(stickerChars);
+        char[] partChars = new char[totalPuzzleParts];
+        for (int i = 0; i < totalPuzzleParts; i++)
+            partChars[i] = PuzzlePartsCollected[i] ? '1' : '0';
+        data["PuzzleParts"] = new string(partChars);
 
         PlatformService.Instance.SaveGameData(data);
     }
@@ -151,8 +151,8 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.SetInt("TodayCoinsEarned", todayCoinsEarned);
         PlayerPrefs.SetInt("HugCount", HugCount);
 
-        for (int i = 0; i < StickersCollected.Length; i++)
-            PlayerPrefs.SetInt($"Sticker_{i}", StickersCollected[i] ? 1 : 0);
+        for (int i = 0; i < PuzzlePartsCollected.Length; i++)
+            PlayerPrefs.SetInt($"PuzzlePart_{i}", PuzzlePartsCollected[i] ? 1 : 0);
 
         PlayerPrefs.SetInt("SelectedCharacter", SelectedCharacterIndex);
         PlayerPrefs.SetInt("SelectedBackground", SelectedBackgroundIndex);
@@ -181,15 +181,26 @@ public class GameManager : MonoBehaviour
 
     public void PerformAction(string actionType)
     {
+        // Начисляем монету
         if (todayCoinsEarned < maxDailyCoins)
         {
             Coins += coinsPerAction;
             todayCoinsEarned++;
             OnCoinsChanged?.Invoke();
             SaveAllData();
+
+            // <-- ДОБАВЛЕНО: подсказка о монете (первое получение за день)
+            if (todayCoinsEarned == 1)
+                VoiceTipsManager.Instance?.PlayTipCoin();
         }
 
-        TryGiveSticker();
+        // <-- ДОБАВЛЕНО: подсказки для действий (только первый раз)
+        if (actionType == "feed")
+            VoiceTipsManager.Instance?.PlayTipFeed();
+        else if (actionType == "play")
+            VoiceTipsManager.Instance?.PlayTipPlay();
+
+        TryGivePuzzlePart();
         Debug.Log($"[GameManager] Action performed: {actionType}");
     }
 
@@ -200,28 +211,30 @@ public class GameManager : MonoBehaviour
         SaveAllData();
     }
 
-    private void TryGiveSticker()
+    private void TryGivePuzzlePart()
     {
         string today = System.DateTime.Now.ToString("yyyy-MM-dd");
-        string lastStickerDate = PlayerPrefs.GetString("LastStickerDate", "");
-        if (lastStickerDate == today) return;
+        string lastPuzzleDate = PlayerPrefs.GetString("LastPuzzleDate", "");
+        if (lastPuzzleDate == today) return;
 
         List<int> missing = new List<int>();
-        for (int i = 0; i < StickersCollected.Length; i++)
-            if (!StickersCollected[i]) missing.Add(i);
+        for (int i = 0; i < PuzzlePartsCollected.Length; i++)
+            if (!PuzzlePartsCollected[i]) missing.Add(i);
 
         if (missing.Count == 0) return;
 
         int randomIndex = missing[Random.Range(0, missing.Count)];
-        StickersCollected[randomIndex] = true;
-        PlayerPrefs.SetString("LastStickerDate", today);
-        OnStickersChanged?.Invoke();
+        PuzzlePartsCollected[randomIndex] = true;
+        PlayerPrefs.SetString("LastPuzzleDate", today);
+        OnPuzzleChanged?.Invoke();
         SaveAllData();
 
+        VoiceTipsManager.Instance?.PlayTipCollection(); // <-- ДОБАВЛЕНО
+
         bool allCollected = true;
-        for (int i = 0; i < StickersCollected.Length; i++)
+        for (int i = 0; i < PuzzlePartsCollected.Length; i++)
         {
-            if (!StickersCollected[i]) { allCollected = false; break; }
+            if (!PuzzlePartsCollected[i]) { allCollected = false; break; }
         }
         if (allCollected)
         {

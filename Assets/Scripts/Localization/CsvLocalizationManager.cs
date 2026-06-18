@@ -34,6 +34,7 @@ namespace Vibies.Localization
             if (!availableLanguages.Contains(currentLanguage))
                 currentLanguage = defaultLanguage;
 
+            Debug.Log("[Localization] Awake – загрузка локализации...");
             LoadLocalization();
         }
 
@@ -45,6 +46,8 @@ namespace Vibies.Localization
                 Debug.LogError($"[Localization] CSV файл не найден: Resources/Localization/{csvFileName}.csv");
                 return;
             }
+
+            Debug.Log($"[Localization] CSV загружен, длина: {csvFile.text.Length} символов");
 
             string[] lines = csvFile.text.Split('\n');
             if (lines.Length < 2)
@@ -74,6 +77,7 @@ namespace Vibies.Localization
                 return;
             }
 
+            int count = 0;
             for (int i = 1; i < lines.Length; i++)
             {
                 string line = lines[i].Trim();
@@ -95,9 +99,10 @@ namespace Vibies.Localization
                 }
 
                 localizationData[key] = translations;
+                count++;
             }
 
-            // Уведомляем подписчиков, что данные загружены
+            Debug.Log($"[Localization] Загружено {count} ключей");
             OnLanguageChanged?.Invoke();
         }
 
@@ -114,6 +119,7 @@ namespace Vibies.Localization
                     return enText;
                 return key;
             }
+            Debug.LogWarning($"[Localization] Ключ не найден: {key}");
             return key;
         }
 
@@ -130,6 +136,7 @@ namespace Vibies.Localization
                     return enText;
                 return key;
             }
+            Debug.LogWarning($"[Localization] Ключ не найден: {key}");
             return key;
         }
 

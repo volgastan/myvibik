@@ -4,7 +4,7 @@ using TMPro;
 using System.Collections;
 using Vibies.Localization;
 
-public class CharacterController : MonoBehaviour
+public class VibikController : MonoBehaviour
 {
     [Header("Ссылки")]
     [SerializeField] private Image characterImage;
@@ -30,11 +30,17 @@ public class CharacterController : MonoBehaviour
     {
         if (characterData == null)
         {
-            Debug.LogWarning("[CharacterController] CharacterData не назначен!");
+            Debug.LogWarning("[VibikController] CharacterData не назначен!");
             return;
         }
         gameManager = FindFirstObjectByType<GameManager>();
         StartIdleAnimation();
+
+        // Диагностика AudioSource
+        if (audioSource == null)
+            Debug.LogError("[VibikController] AudioSource не назначен!");
+        else
+            Debug.Log("[VibikController] AudioSource найден, Volume = " + audioSource.volume + ", Mute = " + audioSource.mute);
     }
 
     private void Update()
@@ -95,16 +101,19 @@ public class CharacterController : MonoBehaviour
 
     public void PlayEatAnimation()
     {
+        Debug.Log("[VibikController] PlayEatAnimation вызван");
         PlayActionAnimation(characterData.eatSprites, characterData.eatSounds, characterData.eatPhrases, actionDuration);
     }
 
     public void PlayPlayAnimation()
     {
+        Debug.Log("[VibikController] PlayPlayAnimation вызван");
         PlayActionAnimation(characterData.playSprites, characterData.playSounds, characterData.playPhrases, actionDuration);
     }
 
     public void PlayHugAnimation()
     {
+        Debug.Log("[VibikController] PlayHugAnimation вызван");
         if (currentAnimation != null) StopCoroutine(currentAnimation);
         if (idleCoroutine != null) StopCoroutine(idleCoroutine);
         if (blinkCoroutine != null) StopCoroutine(blinkCoroutine);
@@ -112,6 +121,8 @@ public class CharacterController : MonoBehaviour
 
         if (gameManager != null)
             gameManager.AddHug();
+
+        VoiceTipsManager.Instance?.PlayTipHug();
 
         currentAnimation = StartCoroutine(HugAnimationCoroutine());
     }
@@ -127,17 +138,37 @@ public class CharacterController : MonoBehaviour
 
     private IEnumerator ActionAnimationCoroutine(Sprite[] sprites, AudioClip[] sounds, string[] phraseKeys, float duration)
     {
+        // Фраза
         if (phraseText != null && phraseKeys != null && phraseKeys.Length > 0)
         {
             string randomKey = phraseKeys[Random.Range(0, phraseKeys.Length)];
             string localizedText = GetLocalizedPhrase(randomKey);
             phraseText.text = localizedText;
+            Debug.Log($"[VibikController] Фраза: {localizedText} (ключ: {randomKey})");
         }
+
+        // Звук
+        bool soundPlayed = false;
         if (audioSource != null && sounds != null && sounds.Length > 0)
         {
             AudioClip randomSound = sounds[Random.Range(0, sounds.Length)];
-            audioSource.PlayOneShot(randomSound);
+            if (randomSound != null)
+            {
+                audioSource.PlayOneShot(randomSound);
+                soundPlayed = true;
+                Debug.Log($"[VibikController] Воспроизведён звук: {randomSound.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[VibikController] Звук null в массиве");
+            }
         }
+        else
+        {
+            Debug.LogWarning($"[VibikController] Нет звуков для воспроизведения. audioSource={audioSource != null}, sounds={(sounds != null ? sounds.Length.ToString() : "null")}");
+        }
+
+        // Анимация спрайтов
         if (sprites != null && sprites.Length > 0)
         {
             float timePerFrame = duration / sprites.Length;
@@ -151,22 +182,44 @@ public class CharacterController : MonoBehaviour
         {
             yield return new WaitForSeconds(duration);
         }
+
+        // Если звук не воспроизвёлся, попробуем проиграть хотя бы один из доступных (на случай, если массив пуст, но есть звуки в других местах)
+        if (!soundPlayed && audioSource != null && characterData.idleSounds != null && characterData.idleSounds.Length > 0)
+        {
+            Debug.Log("[VibikController] Воспроизводим запасной idle-звук");
+            audioSource.PlayOneShot(characterData.idleSounds[Random.Range(0, characterData.idleSounds.Length)]);
+        }
+
         ResetCharacter();
     }
 
     private IEnumerator HugAnimationCoroutine()
     {
+        // Фраза
         if (phraseText != null && characterData.hugPhrases != null && characterData.hugPhrases.Length > 0)
         {
             string randomKey = characterData.hugPhrases[Random.Range(0, characterData.hugPhrases.Length)];
             string localizedText = GetLocalizedPhrase(randomKey);
             phraseText.text = localizedText;
+            Debug.Log($"[VibikController] Hug фраза: {localizedText} (ключ: {randomKey})");
         }
+
+        // Звук объятия
         if (audioSource != null && characterData.hugSounds != null && characterData.hugSounds.Length > 0)
         {
             AudioClip randomSound = characterData.hugSounds[Random.Range(0, characterData.hugSounds.Length)];
-            audioSource.PlayOneShot(randomSound);
+            if (randomSound != null)
+            {
+                audioSource.PlayOneShot(randomSound);
+                Debug.Log($"[VibikController] Воспроизведён звук объятия: {randomSound.name}");
+            }
         }
+        else
+        {
+            Debug.LogWarning("[VibikController] Нет звуков для объятия");
+        }
+
+        // Анимация объятия с масштабированием
         if (characterData.hugSprites != null && characterData.hugSprites.Length > 0)
         {
             float timePerFrame = hugDuration / characterData.hugSprites.Length;
@@ -183,6 +236,7 @@ public class CharacterController : MonoBehaviour
         {
             yield return new WaitForSeconds(hugDuration);
         }
+
         ResetCharacter();
     }
 
@@ -223,6 +277,8 @@ public class CharacterController : MonoBehaviour
             string text = CsvLocalizationManager.Instance.GetText(key);
             if (!string.IsNullOrEmpty(text) && text != key)
                 return text;
+            else
+                Debug.LogWarning($"[VibikController] Локализация вернула ключ или пустую строку для: {key}");
         }
         return key;
     }

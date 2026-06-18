@@ -1,6 +1,6 @@
 """
 MyVibik Assistant — Помощник для проекта "Мой Вайбик"
-Поддержка VK Mini App и RuStore
+Версия 2.0 — с учётом всех новых данных
 """
 
 import json
@@ -47,10 +47,10 @@ class MyVibikConfig:
     def get_default_config(self):
         return {
             "project": {
-                "name": "Мой Вайбик",
+                "name": "Мой Вайбик (My Vibik)",
                 "unity_version": "2022.3 LTS",
-                "type": "2D Tamagotchi-симулятор (VK Mini App + RuStore)",
-                "description": "Игра-витрина для мягкой игрушки с механикой объятия. VK Mini App для раскрутки, RuStore для монетизации.",
+                "type": "2D Tamagotchi-витрина для мягкой игрушки",
+                "description": "Игра-витрина с механикой объятия, паззлом, коллекционированием и социальными механиками. Платформы: VK Mini App, RuStore, Google Play.",
                 "created": str(datetime.now())
             },
             "rules": {
@@ -62,10 +62,11 @@ class MyVibikConfig:
                     "интерфейсы": "I" + "PascalCase"
                 },
                 "architecture": [
-                    "Использовать ScriptableObjects для данных",
+                    "Использовать ScriptableObjects для данных (CharacterData, ShopItemData)",
                     "Платформенный слой через IPlatformService",
-                    "Избегать синглтонов (кроме PlatformService)",
-                    "Все UI-элементы создавать в Unity"
+                    "Использовать события (UnityEvent) для обновления UI",
+                    "Разделять логику GameManager, UIManager, ShopManager, VoiceTipsManager",
+                    "Асинхронная загрузка локализации через CsvLocalizationManager"
                 ]
             },
             "folders": {
@@ -74,7 +75,8 @@ class MyVibikConfig:
                 "scenes": "Assets/Scenes",
                 "sprites": "Assets/Sprites",
                 "audio": "Assets/Audio",
-                "resources": "Assets/Resources"
+                "resources": "Assets/Resources",
+                "data": "Assets/Data"
             },
             "history": {
                 "scans": [],
@@ -214,6 +216,15 @@ class MyVibikConfig:
 - Поддержка VK Mini App (WebGL) и RuStore (Android)
 - Облачное сохранение через VK ID
 - Тизер контента в VK-версии («Доступно в приложении»)
+- Локализация через CsvLocalizationManager (ключам в CSV)
+- Звуки: фразы персонажа (Eat, Play, Hug, Idle), сердцебиение, голосовые подсказки.
+- Анимации: Idle-дыхание, моргание, действия, объятие с масштабированием.
+
+🛠️ ТЕКУЩИЕ ПРОБЛЕМЫ (ОПИШИ В ЗАПРОСЕ):
+- CsvLocalizationManager не инициализируется (нет логов)
+- Текст в облачке отображается как ключи (например, "phrase_eat_1") вместо перевода
+- Звуки не воспроизводятся (возможно, AudioSource не назначен или клипы не загружены)
+- StickerSlot не находит спрайты для паззла (Resources/Puzzle/ отсутствует)
 """
         return prompt
 
@@ -231,7 +242,7 @@ class MyVibikConfig:
         print("="*50)
 
         print("\nОпишите, что вы хотите сделать:")
-        print("Пример: 'Создать IPlatformService и заглушку'")
+        print("Пример: 'Исправить локализацию и звуки'")
         query = input("Ваш запрос: ").strip()
         if not query:
             print("[ERROR] Запрос не может быть пустым")

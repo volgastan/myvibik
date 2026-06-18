@@ -8,7 +8,7 @@ public class UIManager : MonoBehaviour
 {
     [Header("Ресурсы")]
     [SerializeField] private GameManager gameManager;
-    [SerializeField] private CharacterController characterController;
+    [SerializeField] private VibikController vibikController;
 
     [Header("Панели")]
     [SerializeField] private GameObject mainPanel;
@@ -41,14 +41,14 @@ public class UIManager : MonoBehaviour
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManager>();
 
-        if (characterController == null)
-            characterController = FindFirstObjectByType<CharacterController>();
+        if (vibikController == null)
+            vibikController = FindFirstObjectByType<VibikController>();
 
         if (gameManager != null)
         {
             gameManager.OnCoinsChanged += UpdateCoinsUI;
             gameManager.OnDaysChanged += UpdateDaysUI;
-            gameManager.OnStickersChanged += UpdatePuzzleUI;
+            gameManager.OnPuzzleChanged += UpdatePuzzleUI;
             gameManager.OnHugCountChanged += UpdateHugUI;
         }
         else
@@ -65,12 +65,12 @@ public class UIManager : MonoBehaviour
         if (actionFeedButton != null)
             actionFeedButton.onClick.AddListener(() => {
                 gameManager?.PerformAction("feed");
-                characterController?.PlayEatAnimation();
+                vibikController?.PlayEatAnimation();
             });
         if (actionPlayButton != null)
             actionPlayButton.onClick.AddListener(() => {
                 gameManager?.PerformAction("play");
-                characterController?.PlayPlayAnimation();
+                vibikController?.PlayPlayAnimation();
             });
 
         // Навигация
@@ -87,6 +87,9 @@ public class UIManager : MonoBehaviour
         CloseShop();
         CloseCollection();
         if (mainPanel != null) mainPanel.SetActive(true);
+
+        // <-- ДОБАВЛЕНО: подсказка дня при старте (сыграет только один раз)
+        VoiceTipsManager.Instance?.PlayTipDay();
     }
 
     private void OnDestroy()
@@ -95,7 +98,7 @@ public class UIManager : MonoBehaviour
         {
             gameManager.OnCoinsChanged -= UpdateCoinsUI;
             gameManager.OnDaysChanged -= UpdateDaysUI;
-            gameManager.OnStickersChanged -= UpdatePuzzleUI;
+            gameManager.OnPuzzleChanged -= UpdatePuzzleUI;
             gameManager.OnHugCountChanged -= UpdateHugUI;
         }
         if (CsvLocalizationManager.Instance != null)
@@ -159,10 +162,10 @@ public class UIManager : MonoBehaviour
     private void UpdatePuzzleUI()
     {
         if (gameManager == null) return;
-        bool[] stickers = gameManager.StickersCollected;
-        for (int i = 0; i < puzzleSlots.Count && i < stickers.Length; i++)
+        bool[] parts = gameManager.PuzzlePartsCollected;
+        for (int i = 0; i < puzzleSlots.Count && i < parts.Length; i++)
         {
-            puzzleSlots[i].SetCollected(stickers[i]);
+            puzzleSlots[i].SetCollected(parts[i]);
         }
     }
 
@@ -198,6 +201,7 @@ public class UIManager : MonoBehaviour
         {
             shopPanel.SetActive(true);
             mainPanel?.SetActive(false);
+            VoiceTipsManager.Instance?.PlayTipShop(); // <-- ДОБАВЛЕНО
         }
     }
 

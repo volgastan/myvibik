@@ -7,7 +7,7 @@ public class HugHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     [Header("Настройки")]
     [SerializeField] private float holdDuration = 2.5f;
     [SerializeField] private Image progressCircle;
-    [SerializeField] private CharacterController characterController;
+    [SerializeField] private VibikController vibikController; // переименовано
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip heartbeatSound;
 
@@ -23,8 +23,8 @@ public class HugHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 
     private void Awake()
     {
-        if (characterController == null)
-            characterController = GetComponent<CharacterController>();
+        if (vibikController == null)
+            vibikController = GetComponent<VibikController>();
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
 
@@ -53,7 +53,7 @@ public class HugHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
             progressCircle.transform.localScale = Vector3.zero;
             progressCircle.gameObject.SetActive(false);
 
-            // Вычисляем масштаб, чтобы круг перекрыл весь экран
+            // Вычисляем масштаб для покрытия экрана
             RectTransform canvasRect = progressCircle.canvas.transform as RectTransform;
             float screenWidth = canvasRect.rect.width;
             float screenHeight = canvasRect.rect.height;
@@ -137,8 +137,8 @@ public class HugHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (progressCircle != null)
             progressCircle.gameObject.SetActive(false);
 
-        if (characterController != null)
-            characterController.PlayHugAnimation();
+        if (vibikController != null)
+            vibikController.PlayHugAnimation();
 
         Invoke(nameof(ResetHug), 3f);
     }

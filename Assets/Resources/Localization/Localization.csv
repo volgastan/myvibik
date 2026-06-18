@@ -17,3 +17,26 @@ phrase_play_1;Весело!;Fun!;Eğlenceli!
 phrase_play_2;Ещё!;Again!;Tekrar!
 phrase_play_3;Ура!;Hooray!;Yaşasın!
 hugs_label;Объятий;Hugs;Sarılmalar
+idle_tip_hug;Нажми на меня и подержи, чтобы обнять!;Press and hold me to hug!;Bana bas ve sarılmak için tut!
+idle_tip_feed;Нажми на кнопку с едой, чтобы покормить меня!;Press the food button to feed me!;Beni beslemek için yemek düğmesine bas!
+idle_tip_play;Нажми на кнопку с игрушкой, чтобы поиграть!;Press the toy button to play!;Oynamak için oyuncak düğmesine bas!
+idle_tip_puzzle;Заходи каждый день и получай часть паззла!;Visit every day to get a puzzle piece!;Her gün gel ve bir yapboz parçası al!
+idle_tip_friend;Собери все 8 частей — откроется новый друг!;Collect all 8 pieces to unlock a new friend!;8 parçayı topla ve yeni bir arkadaş aç!
+idle_tip_coins;Монетки нужны для магазина!;Coins are for the shop!;Madeni paralar dükkan için!
+idle_tip_shop;В магазине можно купить фон и костюм!;You can buy backgrounds and costumes in the shop!;Dükkanda arka plan ve kostüm satın alabilirsin!
+idle_love_1;Я люблю, когда ты меня обнимаешь!;I love when you hug me!;Bana sarıldığında çok seviyorum!
+idle_love_2;Ты мой лучший друг!;You're my best friend!;Sen benim en iyi arkadaşımsın!
+idle_play_offer;Хочешь поиграть со мной?;Wanna play with me?;Benimle oynamak ister misin?
+phrase_hug_1;Обнимашки!;Hugs!;Sarılıyor!
+phrase_hug_2;Ты мой любимый!;You're my love!;Sen benim aşkımsın!
+phrase_hug_3;Мур-мур!;Purr-purr!;Mır-mır!
+shop_bg_beach;Пляж;Beach;Plaj
+shop_bg_forest;Лес;Forest;Orman
+shop_bg_night;Ночь;Night;Gece
+shop_costume_hat;Шляпа;Hat;Şapka
+shop_costume_scarf;Шарф;Scarf;Atkı
+phrase_hug_1;Обнимашки!;Hugs!;Sarılıyor!
+phrase_hug_2;Ты мой любимый!;You're my love!;Sen benim aşkımsın!
+phrase_hug_3;Мур-мур!;Purr-purr!;Mır-mır!
+phrase_hug_4;Я счастлив!;I'm happy!;Mutluyum!
+phrase_hug_5;Ты лучший!;You're the best!;En iyisin!

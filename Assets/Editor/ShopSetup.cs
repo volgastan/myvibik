@@ -8,16 +8,9 @@ public class ShopSetup : EditorWindow
     [MenuItem("Tools/Setup Shop")]
     static void CreateAllShopItems()
     {
-        // 1. Создаём папки
         CreateFolders();
-
-        // 2. Создаём ассеты ShopItemData (фоны и костюмы)
         CreateShopItems();
-
-        // 3. Создаём префаб ShopItemView
         CreateShopItemPrefab();
-
-        // 4. Настраиваем ShopManager на сцене
         SetupShopManager();
 
         Debug.Log("Магазин полностью настроен!");
@@ -38,12 +31,10 @@ public class ShopSetup : EditorWindow
 
     static void CreateShopItems()
     {
-        // Создаём фоны
         CreateShopItem("BG_Forest", ShopItemData.ItemType.Background, "shop_bg_forest", 5, 0);
         CreateShopItem("BG_Beach", ShopItemData.ItemType.Background, "shop_bg_beach", 10, 1);
         CreateShopItem("BG_Night", ShopItemData.ItemType.Background, "shop_bg_night", 15, 2);
 
-        // Создаём костюмы
         CreateShopItem("Costume_Hat", ShopItemData.ItemType.Costume, "shop_costume_hat", 3, 0);
         CreateShopItem("Costume_Scarf", ShopItemData.ItemType.Costume, "shop_costume_scarf", 5, 1);
 
@@ -60,11 +51,9 @@ public class ShopSetup : EditorWindow
         item.price = price;
         item.unlockIndex = unlockIndex;
 
-        // Создаём заглушки для иконок (можно потом заменить)
         string iconPath = $"Assets/Sprites/Shop/{name}_icon.png";
         if (!System.IO.File.Exists(iconPath))
         {
-            // Создаём простую текстуру-заглушку
             Texture2D tex = new Texture2D(128, 128);
             Color[] colors = new Color[128 * 128];
             for (int i = 0; i < colors.Length; i++)
@@ -78,7 +67,6 @@ public class ShopSetup : EditorWindow
         Sprite icon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
         if (icon != null) item.icon = icon;
 
-        // Превью спрайт — используем ту же иконку или можно другую
         item.previewSprite = icon;
 
         string path = $"Assets/Data/Shop/{name}.asset";
@@ -87,16 +75,13 @@ public class ShopSetup : EditorWindow
 
     static void CreateShopItemPrefab()
     {
-        // Создаём GameObject с компонентами
         GameObject prefabObj = new GameObject("ShopItemPrefab");
         RectTransform rt = prefabObj.AddComponent<RectTransform>();
         rt.sizeDelta = new Vector2(200, 250);
 
-        // Фон ячейки (Image)
         Image bg = prefabObj.AddComponent<Image>();
         bg.color = new Color(0.95f, 0.95f, 0.95f);
 
-        // Дочерние элементы
         // Иконка
         GameObject iconObj = new GameObject("Icon");
         iconObj.transform.SetParent(prefabObj.transform);
@@ -148,7 +133,6 @@ public class ShopSetup : EditorWindow
         btnRt.offsetMin = Vector2.zero;
         btnRt.offsetMax = Vector2.zero;
 
-        // Текст на кнопке
         GameObject btnTextObj = new GameObject("Text (TMP)");
         btnTextObj.transform.SetParent(btnObj.transform);
         TextMeshProUGUI btnTmp = btnTextObj.AddComponent<TextMeshProUGUI>();
@@ -162,9 +146,7 @@ public class ShopSetup : EditorWindow
         btnTextRt.offsetMin = Vector2.zero;
         btnTextRt.offsetMax = Vector2.zero;
 
-        // Добавляем ShopItemView
         ShopItemView view = prefabObj.AddComponent<ShopItemView>();
-        // Назначаем ссылки через рефлексию или SerializedObject
         SerializedObject so = new SerializedObject(view);
         so.FindProperty("iconImage").objectReferenceValue = iconImg;
         so.FindProperty("nameText").objectReferenceValue = nameTmp;
@@ -173,7 +155,6 @@ public class ShopSetup : EditorWindow
         so.FindProperty("actionButtonText").objectReferenceValue = btnTmp;
         so.ApplyModifiedProperties();
 
-        // Сохраняем префаб
         string path = "Assets/Prefabs/ShopItemPrefab.prefab";
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(prefabObj, path);
         DestroyImmediate(prefabObj);
@@ -193,8 +174,7 @@ public class ShopSetup : EditorWindow
         GameObject shopPanel = GameObject.Find("ShopPanel");
         if (shopPanel == null)
         {
-            // Создаём ShopPanel, если нет
-            Canvas canvas = GameObject.FindObjectOfType<Canvas>();
+            Canvas canvas = FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
                 GameObject canvasObj = new GameObject("Canvas");
@@ -215,7 +195,6 @@ public class ShopSetup : EditorWindow
             shopPanel.SetActive(false);
         }
 
-        // Находим ItemsContainer
         Transform container = shopPanel.transform.Find("ItemsContainer");
         if (container == null)
         {
@@ -234,12 +213,10 @@ public class ShopSetup : EditorWindow
             container = containerObj.transform;
         }
 
-        // Назначаем в ShopManager
         SerializedObject so = new SerializedObject(shopManager);
         so.FindProperty("itemsContainer").objectReferenceValue = container.gameObject;
         so.FindProperty("itemPrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/ShopItemPrefab.prefab");
 
-        // Загружаем все ShopItemData ассеты
         string[] guids = AssetDatabase.FindAssets("t:ShopItemData");
         var items = new System.Collections.Generic.List<ShopItemData>();
         foreach (var guid in guids)
@@ -253,7 +230,6 @@ public class ShopSetup : EditorWindow
             so.FindProperty($"shopItems.Array.data[{i}]").objectReferenceValue = items[i];
         so.ApplyModifiedProperties();
 
-        // Добавляем BackButton в ShopPanel, если нет
         Transform backBtn = shopPanel.transform.Find("BackButton");
         if (backBtn == null)
         {
@@ -267,7 +243,6 @@ public class ShopSetup : EditorWindow
             rt.anchorMax = new Vector2(0, 1);
             rt.anchoredPosition = new Vector2(50, -50);
             rt.sizeDelta = new Vector2(100, 50);
-            // Добавляем текст "Назад"
             GameObject textObj = new GameObject("Text (TMP)");
             textObj.transform.SetParent(backObj.transform);
             TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
@@ -280,8 +255,7 @@ public class ShopSetup : EditorWindow
             textRt.anchorMax = Vector2.one;
             textRt.offsetMin = Vector2.zero;
             textRt.offsetMax = Vector2.zero;
-            // Привязываем метод CloseShop к кнопке
-            UIManager uiManager = GameObject.FindObjectOfType<UIManager>();
+            UIManager uiManager = FindFirstObjectByType<UIManager>();
             if (uiManager != null)
                 btn.onClick.AddListener(uiManager.CloseShop);
         }

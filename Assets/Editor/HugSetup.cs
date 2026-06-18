@@ -49,7 +49,6 @@ public class HugSetup : EditorWindow
             AssetDatabase.Refresh();
             Sprite circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
 
-            // Настраиваем Image
             Image img = progressObj.AddComponent<Image>();
             img.sprite = circleSprite;
             img.color = new Color(0.5f, 0.8f, 1f, 0.5f);
@@ -60,48 +59,7 @@ public class HugSetup : EditorWindow
             img.raycastTarget = false;
 
             progressObj.SetActive(false);
-            Debug.Log("ProgressCircle создан с круглым спрайтом.");
-        }
-        else
-        {
-            // Если уже есть, проверяем настройки
-            Image img = progressObj.GetComponent<Image>();
-            if (img != null)
-            {
-                if (img.type != Image.Type.Filled)
-                    img.type = Image.Type.Filled;
-                if (img.fillMethod != Image.FillMethod.Radial360)
-                    img.fillMethod = Image.FillMethod.Radial360;
-                if (img.fillOrigin != (int)Image.Origin360.Bottom)
-                    img.fillOrigin = (int)Image.Origin360.Bottom;
-                if (img.sprite == null || img.sprite.name != "Circle")
-                {
-                    // Создаём круглый спрайт заново, если его нет
-                    Texture2D tex = new Texture2D(128, 128);
-                    Color[] colors = new Color[128 * 128];
-                    Vector2 center = new Vector2(64, 64);
-                    float radius = 60f;
-                    for (int y = 0; y < 128; y++)
-                    {
-                        for (int x = 0; x < 128; x++)
-                        {
-                            float dist = Vector2.Distance(new Vector2(x, y), center);
-                            colors[y * 128 + x] = (dist <= radius) ? Color.white : Color.clear;
-                        }
-                    }
-                    tex.SetPixels(colors);
-                    tex.Apply();
-                    byte[] png = tex.EncodeToPNG();
-                    string path = "Assets/Sprites/Circle.png";
-                    if (!AssetDatabase.IsValidFolder("Assets/Sprites"))
-                        AssetDatabase.CreateFolder("Assets", "Sprites");
-                    System.IO.File.WriteAllBytes(path, png);
-                    AssetDatabase.Refresh();
-                    Sprite circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                    img.sprite = circleSprite;
-                }
-                EditorUtility.SetDirty(img);
-            }
+            Debug.Log("ProgressCircle создан.");
         }
 
         // 2. Добавляем или обновляем HugHandler
@@ -113,7 +71,7 @@ public class HugSetup : EditorWindow
 
         SerializedObject so = new SerializedObject(handler);
         so.FindProperty("progressCircle").objectReferenceValue = progressObj.GetComponent<Image>();
-        so.FindProperty("characterController").objectReferenceValue = charImage.GetComponent<CharacterController>();
+        so.FindProperty("vibikController").objectReferenceValue = charImage.GetComponent<VibikController>();
 
         AudioSource audioSrc = charImage.GetComponent<AudioSource>();
         if (audioSrc == null)
@@ -139,6 +97,6 @@ public class HugSetup : EditorWindow
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene()
         );
 
-        Debug.Log("Прогресс-бар настроен как круг. Запустите игру и проверьте.");
+        Debug.Log("Объятие полностью настроено! Круговой прогресс-бар будет масштабироваться до размера экрана.");
     }
 }
