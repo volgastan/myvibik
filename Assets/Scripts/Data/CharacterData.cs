@@ -7,23 +7,28 @@ public class CharacterData : ScriptableObject
     public string characterName;
     public string nameKey;
 
-    [Header("Спрайты (Idle)")]
+    [Header("Idle (покой)")]
     public Sprite idleSprite;
-    public Sprite[] idleAnimationFrames;
+    public Sprite[] idleAnimationFrames; // дыхание
+    public Sprite blinkSprite;           // для моргания
 
-    [Header("Спрайты действий")]
-    public Sprite[] happySprites;
-    public Sprite[] eatSprites;
-    public Sprite[] playSprites;
+    [Header("Анимации действий")]
+    public Sprite[] happySprites;   // Погладить (удалить позже)
+    public Sprite[] eatSprites;     // Покормить
+    public Sprite[] playSprites;    // Поиграть
+    public Sprite[] hugSprites;     // Обнять (5–6 кадров)
 
     [Header("Звуки")]
     public AudioClip[] happySounds;
     public AudioClip[] eatSounds;
     public AudioClip[] playSounds;
+    public AudioClip[] hugSounds;   // урчание + сердцебиение
     public AudioClip[] idleSounds;
 
-    [Header("Фразы")]
+    [Header("Фразы (для облачка)")]
     public string[] happyPhrases;
     public string[] eatPhrases;
     public string[] playPhrases;
+    public string[] hugPhrases;     // тёплые фразы для объятия
+    public string[] idlePhrases;    // фразы в бездействии
 }

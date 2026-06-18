@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63319f1970a42844daffbd033998d2db, type: 3}
+  m_Name: Costume_Scarf
+  m_EditorClassIdentifier: Assembly-CSharp::ShopItemData
+  id: costume_scarf
+  type: 1
+  nameKey: shop_costume_scarf
+  price: 5
+  icon: {fileID: 7634222731947315159, guid: 728cf38dc9a46b840a7944a8227c9905, type: 3}
+  previewSprite: {fileID: 7634222731947315159, guid: 728cf38dc9a46b840a7944a8227c9905, type: 3}
+  unlockIndex: 1

@@ -23,6 +23,15 @@ MonoBehaviour:
   eatSounds: []
   playSounds: []
   idleSounds: []
-  happyPhrases: []
-  eatPhrases: []
-  playPhrases: []
+  happyPhrases:
+  - phrase_happy_1
+  - phrase_happy_2
+  - phrase_happy_3
+  eatPhrases:
+  - phrase_eat_1
+  - phrase_eat_2
+  - phrase_eat_3
+  playPhrases:
+  - phrase_play_1
+  - phrase_play_2
+  - phrase_play_3

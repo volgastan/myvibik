@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using Vibies.Localization;
 
 public class UIManager : MonoBehaviour
 {
@@ -17,26 +18,29 @@ public class UIManager : MonoBehaviour
     [Header("Отображение ресурсов")]
     [SerializeField] private TMP_Text coinsText;
     [SerializeField] private TMP_Text daysText;
+    [SerializeField] private TMP_Text hugCountText;
 
-    [Header("Коллекция наклеек")]
-    [SerializeField] private Transform stickerGridParent;
-    [SerializeField] private GameObject stickerSlotPrefab;
+    [Header("Коллекция (паззл)")]
+    [SerializeField] private Transform puzzleGridParent;
+    [SerializeField] private GameObject puzzleSlotPrefab;
 
     [Header("Кнопки действий")]
-    [SerializeField] private Button actionPetButton;
     [SerializeField] private Button actionFeedButton;
     [SerializeField] private Button actionPlayButton;
 
     [Header("Кнопки навигации")]
     [SerializeField] private Button shopButton;
     [SerializeField] private Button collectionButton;
+    [SerializeField] private Button shareButton;
+    [SerializeField] private Button downloadButton;
 
-    private List<StickerSlot> stickerSlots = new List<StickerSlot>();
+    private List<StickerSlot> puzzleSlots = new List<StickerSlot>();
 
     private void Awake()
     {
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManager>();
+
         if (characterController == null)
             characterController = FindFirstObjectByType<CharacterController>();
 
@@ -44,20 +48,20 @@ public class UIManager : MonoBehaviour
         {
             gameManager.OnCoinsChanged += UpdateCoinsUI;
             gameManager.OnDaysChanged += UpdateDaysUI;
-            gameManager.OnStickersChanged += UpdateStickersUI;
+            gameManager.OnStickersChanged += UpdatePuzzleUI;
+            gameManager.OnHugCountChanged += UpdateHugUI;
         }
         else
         {
             Debug.LogError("[UIManager] GameManager не найден!");
         }
 
-        CreateStickerSlots();
+        CreatePuzzleSlots();
 
-        if (actionPetButton != null)
-            actionPetButton.onClick.AddListener(() => {
-                gameManager?.PerformAction("pet");
-                characterController?.PlayHappyAnimation();
-            });
+        if (CsvLocalizationManager.Instance != null)
+            CsvLocalizationManager.Instance.OnLanguageChanged += UpdateCoinsUI;
+
+        // Кнопки действий
         if (actionFeedButton != null)
             actionFeedButton.onClick.AddListener(() => {
                 gameManager?.PerformAction("feed");
@@ -69,15 +73,17 @@ public class UIManager : MonoBehaviour
                 characterController?.PlayPlayAnimation();
             });
 
+        // Навигация
         if (shopButton != null)
             shopButton.onClick.AddListener(OpenShop);
         if (collectionButton != null)
             collectionButton.onClick.AddListener(OpenCollection);
+        if (shareButton != null)
+            shareButton.onClick.AddListener(ShareInVK);
+        if (downloadButton != null)
+            downloadButton.onClick.AddListener(DownloadApp);
 
-        UpdateCoinsUI();
-        UpdateDaysUI();
-        UpdateStickersUI();
-
+        UpdateAllUI();
         CloseShop();
         CloseCollection();
         if (mainPanel != null) mainPanel.SetActive(true);
@@ -89,11 +95,12 @@ public class UIManager : MonoBehaviour
         {
             gameManager.OnCoinsChanged -= UpdateCoinsUI;
             gameManager.OnDaysChanged -= UpdateDaysUI;
-            gameManager.OnStickersChanged -= UpdateStickersUI;
+            gameManager.OnStickersChanged -= UpdatePuzzleUI;
+            gameManager.OnHugCountChanged -= UpdateHugUI;
         }
+        if (CsvLocalizationManager.Instance != null)
+            CsvLocalizationManager.Instance.OnLanguageChanged -= UpdateCoinsUI;
 
-        if (actionPetButton != null)
-            actionPetButton.onClick.RemoveAllListeners();
         if (actionFeedButton != null)
             actionFeedButton.onClick.RemoveAllListeners();
         if (actionPlayButton != null)
@@ -102,53 +109,88 @@ public class UIManager : MonoBehaviour
             shopButton.onClick.RemoveAllListeners();
         if (collectionButton != null)
             collectionButton.onClick.RemoveAllListeners();
+        if (shareButton != null)
+            shareButton.onClick.RemoveAllListeners();
+        if (downloadButton != null)
+            downloadButton.onClick.RemoveAllListeners();
+    }
+
+    private void UpdateAllUI()
+    {
+        UpdateCoinsUI();
+        UpdateDaysUI();
+        UpdateHugUI();
+        UpdatePuzzleUI();
     }
 
     private void UpdateCoinsUI()
     {
         if (coinsText != null && gameManager != null)
-            coinsText.text = gameManager.Coins.ToString();
+        {
+            string label = CsvLocalizationManager.Instance != null 
+                ? CsvLocalizationManager.Instance.GetText("coins_label") 
+                : "Монеты";
+            coinsText.text = $"{label}: {gameManager.Coins}";
+        }
     }
 
     private void UpdateDaysUI()
     {
         if (daysText != null && gameManager != null)
-            daysText.text = gameManager.DaysCount.ToString();
+        {
+            string label = CsvLocalizationManager.Instance != null 
+                ? CsvLocalizationManager.Instance.GetText("days_label") 
+                : "Дни";
+            daysText.text = $"{label}: {gameManager.DaysCount}";
+        }
     }
 
-    private void UpdateStickersUI()
+    private void UpdateHugUI()
+    {
+        if (hugCountText != null && gameManager != null)
+        {
+            string label = CsvLocalizationManager.Instance != null 
+                ? CsvLocalizationManager.Instance.GetText("hugs_label") 
+                : "Объятий";
+            hugCountText.text = $"{label} {gameManager.HugCount}";
+        }
+    }
+
+    private void UpdatePuzzleUI()
     {
         if (gameManager == null) return;
         bool[] stickers = gameManager.StickersCollected;
-        for (int i = 0; i < stickerSlots.Count && i < stickers.Length; i++)
+        for (int i = 0; i < puzzleSlots.Count && i < stickers.Length; i++)
         {
-            stickerSlots[i].SetCollected(stickers[i]);
+            puzzleSlots[i].SetCollected(stickers[i]);
         }
     }
 
-    private void CreateStickerSlots()
+    private void CreatePuzzleSlots()
     {
-        if (stickerGridParent == null || stickerSlotPrefab == null)
+        if (puzzleGridParent == null || puzzleSlotPrefab == null)
         {
-            Debug.LogWarning("[UIManager] stickerGridParent или stickerSlotPrefab не назначены");
+            Debug.LogWarning("[UIManager] puzzleGridParent или puzzleSlotPrefab не назначены");
             return;
         }
 
-        foreach (Transform child in stickerGridParent)
+        foreach (Transform child in puzzleGridParent)
             Destroy(child.gameObject);
-        stickerSlots.Clear();
+        puzzleSlots.Clear();
 
-        int totalStickers = 8;
-        for (int i = 0; i < totalStickers; i++)
+        int totalParts = 8;
+        for (int i = 0; i < totalParts; i++)
         {
-            GameObject slot = Instantiate(stickerSlotPrefab, stickerGridParent);
+            GameObject slot = Instantiate(puzzleSlotPrefab, puzzleGridParent);
             StickerSlot slotScript = slot.GetComponent<StickerSlot>();
             if (slotScript == null)
                 slotScript = slot.AddComponent<StickerSlot>();
             slotScript.SetIndex(i);
-            stickerSlots.Add(slotScript);
+            puzzleSlots.Add(slotScript);
         }
     }
+
+    // ========== НАВИГАЦИЯ ==========
 
     public void OpenShop()
     {
@@ -184,5 +226,21 @@ public class UIManager : MonoBehaviour
             collectionPanel.SetActive(false);
             mainPanel?.SetActive(true);
         }
+    }
+
+    // ========== СОЦИАЛЬНЫЕ МЕХАНИКИ ==========
+
+    private void ShareInVK()
+    {
+        string text = "Я обнимаю Вайбика! ❤️ Присоединяйся!";
+        string imageUrl = "";
+        string link = "https://vk.com/app/...";
+        PlatformService.Instance.ShareInVK(text, imageUrl, link);
+    }
+
+    private void DownloadApp()
+    {
+        string appUrl = "https://apps.rustore.ru/app/...";
+        PlatformService.Instance.OpenAppStore(appUrl);
     }
 }

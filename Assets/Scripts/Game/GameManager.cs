@@ -10,15 +10,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int coinsPerAction = 1;
     [SerializeField] private int totalStickers = 8;
 
-    // Текущее состояние
     public int Coins { get; private set; }
     public int DaysCount { get; private set; }
     public bool[] StickersCollected { get; private set; }
     public int SelectedCharacterIndex { get; private set; }
     public int SelectedBackgroundIndex { get; private set; }
     public int SelectedCostumeIndex { get; private set; }
+    public int HugCount { get; private set; }
 
-    // События
     public System.Action OnCoinsChanged;
     public System.Action OnDaysChanged;
     public System.Action OnStickersChanged;
@@ -27,6 +26,7 @@ public class GameManager : MonoBehaviour
     public System.Action OnCostumeChanged;
     public System.Action<int> OnBackgroundUnlocked;
     public System.Action<int> OnCharacterUnlocked;
+    public System.Action OnHugCountChanged;
 
     private string lastVisitDate = "";
     private int todayCoinsEarned = 0;
@@ -53,19 +53,9 @@ public class GameManager : MonoBehaviour
         CheckNewDay();
     }
 
-    // ========== ЗАГРУЗКА / СОХРАНЕНИЕ ==========
-
     private void LoadAllData()
     {
-        if (YandexManager.Instance != null)
-        {
-            YandexManager.Instance.LoadGameData(OnCloudDataLoaded);
-        }
-        else
-        {
-            LoadFromPlayerPrefs();
-            ApplyLoadedData();
-        }
+        PlatformService.Instance.LoadGameData(OnCloudDataLoaded);
     }
 
     private void OnCloudDataLoaded(Dictionary<string, object> cloudData)
@@ -89,6 +79,7 @@ public class GameManager : MonoBehaviour
         if (data.ContainsKey("DaysCount")) DaysCount = System.Convert.ToInt32(data["DaysCount"]);
         if (data.ContainsKey("LastVisitDate")) lastVisitDate = data["LastVisitDate"].ToString();
         if (data.ContainsKey("TodayCoinsEarned")) todayCoinsEarned = System.Convert.ToInt32(data["TodayCoinsEarned"]);
+        if (data.ContainsKey("HugCount")) HugCount = System.Convert.ToInt32(data["HugCount"]);
 
         if (data.ContainsKey("Stickers"))
         {
@@ -108,6 +99,7 @@ public class GameManager : MonoBehaviour
         DaysCount = PlayerPrefs.GetInt("DaysCount", 0);
         lastVisitDate = PlayerPrefs.GetString("LastVisitDate", "");
         todayCoinsEarned = PlayerPrefs.GetInt("TodayCoinsEarned", 0);
+        HugCount = PlayerPrefs.GetInt("HugCount", 0);
 
         for (int i = 0; i < totalStickers; i++)
             StickersCollected[i] = PlayerPrefs.GetInt($"Sticker_{i}", 0) == 1;
@@ -125,31 +117,30 @@ public class GameManager : MonoBehaviour
         OnCharacterChanged?.Invoke();
         OnBackgroundChanged?.Invoke();
         OnCostumeChanged?.Invoke();
+        OnHugCountChanged?.Invoke();
     }
 
     private void SaveAllData()
     {
         SaveToPlayerPrefs();
 
-        if (YandexManager.Instance != null)
+        var data = new Dictionary<string, object>
         {
-            var data = new Dictionary<string, object>
-            {
-                ["Coins"] = Coins,
-                ["DaysCount"] = DaysCount,
-                ["LastVisitDate"] = lastVisitDate,
-                ["TodayCoinsEarned"] = todayCoinsEarned,
-                ["SelectedCharacter"] = SelectedCharacterIndex,
-                ["SelectedBackground"] = SelectedBackgroundIndex,
-                ["SelectedCostume"] = SelectedCostumeIndex
-            };
-            char[] stickerChars = new char[totalStickers];
-            for (int i = 0; i < totalStickers; i++)
-                stickerChars[i] = StickersCollected[i] ? '1' : '0';
-            data["Stickers"] = new string(stickerChars);
+            ["Coins"] = Coins,
+            ["DaysCount"] = DaysCount,
+            ["LastVisitDate"] = lastVisitDate,
+            ["TodayCoinsEarned"] = todayCoinsEarned,
+            ["SelectedCharacter"] = SelectedCharacterIndex,
+            ["SelectedBackground"] = SelectedBackgroundIndex,
+            ["SelectedCostume"] = SelectedCostumeIndex,
+            ["HugCount"] = HugCount
+        };
+        char[] stickerChars = new char[totalStickers];
+        for (int i = 0; i < totalStickers; i++)
+            stickerChars[i] = StickersCollected[i] ? '1' : '0';
+        data["Stickers"] = new string(stickerChars);
 
-            YandexManager.Instance.SaveGameData(data);
-        }
+        PlatformService.Instance.SaveGameData(data);
     }
 
     private void SaveToPlayerPrefs()
@@ -158,6 +149,7 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.SetInt("DaysCount", DaysCount);
         PlayerPrefs.SetString("LastVisitDate", lastVisitDate);
         PlayerPrefs.SetInt("TodayCoinsEarned", todayCoinsEarned);
+        PlayerPrefs.SetInt("HugCount", HugCount);
 
         for (int i = 0; i < StickersCollected.Length; i++)
             PlayerPrefs.SetInt($"Sticker_{i}", StickersCollected[i] ? 1 : 0);
@@ -168,8 +160,6 @@ public class GameManager : MonoBehaviour
 
         PlayerPrefs.Save();
     }
-
-    // ========== ИГРОВАЯ ЛОГИКА ==========
 
     private void CheckNewDay()
     {
@@ -203,6 +193,13 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[GameManager] Action performed: {actionType}");
     }
 
+    public void AddHug()
+    {
+        HugCount++;
+        OnHugCountChanged?.Invoke();
+        SaveAllData();
+    }
+
     private void TryGiveSticker()
     {
         string today = System.DateTime.Now.ToString("yyyy-MM-dd");
@@ -232,8 +229,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ========== РАЗБЛОКИРОВКИ ==========
-
     private void UnlockBackground(int index)
     {
         PlayerPrefs.SetInt($"BackgroundUnlocked_{index}", 1);
@@ -247,8 +242,6 @@ public class GameManager : MonoBehaviour
         OnCharacterUnlocked?.Invoke(index);
         SaveAllData();
     }
-
-    // ========== МАГАЗИН ==========
 
     public bool BuyBackground(int index, int cost)
     {
@@ -271,8 +264,6 @@ public class GameManager : MonoBehaviour
         SaveAllData();
         return true;
     }
-
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
 
     public bool IsCharacterUnlocked(int index)
     {

@@ -1,6 +1,6 @@
 """
 MyVibik Assistant — Помощник для проекта "Мой Вайбик"
-Автоматически корректирует путь к папке Assets/Scripts.
+Поддержка VK Mini App и RuStore
 """
 
 import json
@@ -19,7 +19,6 @@ class MyVibikConfig:
                     self.data = json.load(f)
                 print("[OK] Конфигурация загружена")
                 self.fix_missing_keys()
-                self.fix_scripts_path()  # <-- добавляем коррекцию пути
             except Exception as e:
                 print(f"[ERROR] Ошибка загрузки: {e}")
                 self.create_default_config()
@@ -30,29 +29,6 @@ class MyVibikConfig:
         default = self.get_default_config()
         self.merge_dicts(self.data, default)
         self.save_config()
-
-    def fix_scripts_path(self):
-        """Исправляет путь к папке Assets/Scripts, если он указывает не туда"""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        scripts_rel = self.data['folders'].get('scripts', 'Assets/Scripts')
-        # Проверяем, существует ли папка по этому пути
-        test_path = os.path.abspath(os.path.join(current_dir, scripts_rel))
-        if not os.path.exists(test_path):
-            # Пробуем вариант просто "Assets/Scripts" (относительно папки скрипта)
-            new_path = "Assets/Scripts"
-            new_test_path = os.path.abspath(os.path.join(current_dir, new_path))
-            if os.path.exists(new_test_path) or not os.path.exists(new_test_path):
-                # Если папка не существует, но путь корректен – оставляем
-                if scripts_rel != new_path:
-                    print(f"[INFO] Исправляю путь к скриптам: {scripts_rel} → {new_path}")
-                    self.data['folders']['scripts'] = new_path
-                    self.save_config()
-            else:
-                # Если папка не существует по новому пути, тоже оставляем (её создадут позже)
-                if scripts_rel != new_path:
-                    print(f"[INFO] Исправляю путь к скриптам: {scripts_rel} → {new_path}")
-                    self.data['folders']['scripts'] = new_path
-                    self.save_config()
 
     def merge_dicts(self, target, source):
         for key, value in source.items():
@@ -66,7 +42,6 @@ class MyVibikConfig:
         self.data = self.get_default_config()
         self.data['folders']['scripts'] = "Assets/Scripts"
         self.save_config()
-        # Создаём папку, если её нет (внутри папки со скриптом)
         self.ensure_scripts_folder()
 
     def get_default_config(self):
@@ -74,26 +49,23 @@ class MyVibikConfig:
             "project": {
                 "name": "Мой Вайбик",
                 "unity_version": "2022.3 LTS",
-                "type": "2D Tamagotchi-симулятор заботы",
-                "description": "Игра для детей 6-9 лет: гладь, корми и играй с милым существом Вайбиком. Собирай наклейки, открывай костюмы и фоны. Простая, добрая и без стресса.",
+                "type": "2D Tamagotchi-симулятор (VK Mini App + RuStore)",
+                "description": "Игра-витрина для мягкой игрушки с механикой объятия. VK Mini App для раскрутки, RuStore для монетизации.",
                 "created": str(datetime.now())
             },
             "rules": {
                 "naming": {
-                    "переменные": "camelCase (playerHealth, currentTurn)",
-                    "методы": "PascalCase (CalculateDamage(), StartBattle())",
-                    "классы": "PascalCase (GameManager, VibikCard)",
-                    "файлы": "PascalCase (GameManagerAutotest.cs)",
-                    "character": "Character (не Unit)",
-                    "damage": "damageValue",
-                    "health": "currentHP",
-                    "mana": "energy"
+                    "переменные": "camelCase",
+                    "методы": "PascalCase",
+                    "классы": "PascalCase",
+                    "файлы": "PascalCase",
+                    "интерфейсы": "I" + "PascalCase"
                 },
                 "architecture": [
                     "Использовать ScriptableObjects для данных",
-                    "Избегать синглтонов",
-                    "Использовать события (UnityEvent)",
-                    "Все UI-элементы создавать в Unity, по возможности без скриптов"
+                    "Платформенный слой через IPlatformService",
+                    "Избегать синглтонов (кроме PlatformService)",
+                    "Все UI-элементы создавать в Unity"
                 ]
             },
             "folders": {
@@ -101,17 +73,18 @@ class MyVibikConfig:
                 "prefabs": "Assets/Prefabs",
                 "scenes": "Assets/Scenes",
                 "sprites": "Assets/Sprites",
-                "audio": "Assets/Audio"
+                "audio": "Assets/Audio",
+                "resources": "Assets/Resources"
             },
             "history": {
                 "scans": [],
                 "requests": []
             },
-            "script_structure": []
+            "script_structure": [],
+            "platforms": ["VK", "RuStore", "GooglePlay"]
         }
 
     def ensure_scripts_folder(self):
-        """Создаёт папку Assets/Scripts, если её нет"""
         scripts_path = self.data['folders'].get('scripts', 'Assets/Scripts')
         current_dir = os.path.dirname(os.path.abspath(__file__))
         abs_scripts_path = os.path.abspath(os.path.join(current_dir, scripts_path))
@@ -134,7 +107,6 @@ class MyVibikConfig:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         abs_scripts_path = os.path.abspath(os.path.join(current_dir, scripts_path))
 
-        # Проверяем, существует ли папка, если нет – создаём
         if not os.path.exists(abs_scripts_path):
             print(f"[WARN] Папка не найдена: {abs_scripts_path}")
             print("[INFO] Создаю папку...")
@@ -232,42 +204,16 @@ class MyVibikConfig:
 {query}
 
 🔄 ВАЖНЫЕ ИНСТРУКЦИИ ДЛЯ DEEPSEEK:
-‼️ ВНИМАНИЕ: ЧИТАЙ ВСЕ ИНСТРУКЦИИ ПРЕЖДЕ ЧЕМ ОТВЕЧАТЬ
+1. Первый шаг — запроси файлы, если они нужны.
+2. Не пиши код без просмотра реальных файлов.
+3. Учитывай платформенную абстракцию (IPlatformService).
+4. Пиши скрипты полностью.
 
-1. 📁 ПЕРВЫЙ И САМЫЙ ВАЖНЫЙ ШАГ - ЗАПРОС ФАЙЛОВ
-   • Если для выполнения задачи нужны какие-то файлы (скрипты, сцены, префабы и т.д.) - ЗАПРОСИ ИХ ПРЯМО СЕЙЧАС
-   • Не пытайся угадывать код или структуру файлов без их содержимого
-   • Скажи мне КОНКРЕТНО какие файлы тебе нужны (например: "Пришли мне GameManager.cs и UIManager.cs")
-
-2. 🚫 ЧТО НЕ ДЕЛАТЬ:
-   • НЕ ПЫТАЙСЯ писать код без просмотра реальных файлов
-   • НЕ ДЕЛАЙ предположений о структуре классов без их исходного кода
-   • НЕ ПРЕДЛАГАЙ изменения, не видя текущую реализацию
-
-3. ✅ ЧТО ДЕЛАТЬ ПОСЛЕ ПОЛУЧЕНИЯ ФАЙЛОВ:
-   • Только после получения ВСЕХ необходимых файлов анализируй их содержимое
-   • Учитывай контекст проекта выше (правила именования, архитектурные правила)
-   • Предлагай изменения на основе реального кода
-
-4. 📝 ФОРМАТ ОТВЕТА (только после получения всех файлов):
-   1. 📊 Анализ текущей ситуации (на основе полученных файлов)
-   2. 🔧 Предлагаемые изменения (с учетом контекста проекта)
-   3. 📄 Полный исправленный код (если меняешь существующие файлы)
-   4. ⚠️ Важные замечания
-
-5. Я начинающий соло-разработчик. Учти это составляя инструкции или формулируя ответ.
-
-6. Весь UI создаем в Unity. Пиши подробные инструкции как это делать. По возможности не используем скрипты для UI-логики (используй UnityEvents в инспекторе).
-
-7. никогда сам ничего не добавляй. выполняй только четко поставленную задачу. если есть какие то предложения по улучшению предложи в чате. ни в коем случае не в коде.
-
-8. 🔴 КРИТИЧЕСКОЕ ДЛЯ WEBGL (Яндекс.Игры):
-   • Мы используем локализацию (русский, в будущем английский). Всегда добавляй ожидание готовности локализации (корутины, проверки isLocalizationReady) перед вызовом методов, требующих локализации.
-   • НИКОГДА не используй синхронные методы загрузки Addressables (WaitForCompletion) — они не поддерживаются на WebGL и вызывают фатальную ошибку.
-   • Все вызовы, связанные с инициализацией (RestartGame, SetAILevel), должны быть защищены проверками на null (например, enhancedLogger) и откладываться, если объект ещё не готов.
-   • Помни: в WebGL объекты инициализируются медленнее, порядок вызовов может отличаться от редактора.
-
-9. ВСЕГДА пиши скрипты полностью (весь файл), не используй сокращения.
+🔴 КРИТИЧЕСКИЕ ТРЕБОВАНИЯ:
+- Платформенный слой через IPlatformService
+- Поддержка VK Mini App (WebGL) и RuStore (Android)
+- Облачное сохранение через VK ID
+- Тизер контента в VK-версии («Доступно в приложении»)
 """
         return prompt
 
@@ -284,7 +230,8 @@ class MyVibikConfig:
         print("СОЗДАНИЕ ЗАПРОСА ДЛЯ DEEPSEEK")
         print("="*50)
 
-        print("\nОпишите, что вы хотите сделать (например, 'Добавить магазин костюмов'):")
+        print("\nОпишите, что вы хотите сделать:")
+        print("Пример: 'Создать IPlatformService и заглушку'")
         query = input("Ваш запрос: ").strip()
         if not query:
             print("[ERROR] Запрос не может быть пустым")
@@ -293,10 +240,9 @@ class MyVibikConfig:
         prompt = self.build_prompt(query)
 
         print("\n" + "="*50)
-        print("ГОТОВЫЙ ПРОМПТ ДЛЯ DEEPSEEK")
+        print("ГОТОВЫЙ ПРОМПТ")
         print("="*50)
         print("\n" + prompt)
-        print("\n" + "="*50)
 
         self.copy_to_clipboard(prompt)
 
@@ -313,7 +259,7 @@ class MyVibikConfig:
             print("\n" + "="*50)
             print(f"MYVIBIK ASSISTANT — {self.data['project']['name']}")
             print("="*50)
-            print("1. 🔍 Сканировать структуру скриптов (Assets/Scripts)")
+            print("1. 🔍 Сканировать структуру скриптов")
             print("2. 📝 Создать запрос для DeepSeek")
             print("3. 🚪 Выход")
 
