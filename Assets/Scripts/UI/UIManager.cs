@@ -15,6 +15,10 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject shopPanel;
     [SerializeField] private GameObject collectionPanel;
 
+    // [DEMO] Ссылка на DemoModeManager (для демо-версии)
+    [Header("Демо-режим")]
+    [SerializeField] private DemoModeManager demoModeManager;
+
     [Header("Отображение ресурсов")]
     [SerializeField] private TMP_Text coinsText;
     [SerializeField] private TMP_Text daysText;
@@ -36,8 +40,13 @@ public class UIManager : MonoBehaviour
 
     private List<StickerSlot> puzzleSlots = new List<StickerSlot>();
 
+    // ========================================================================
+    // Unity Lifecycle
+    // ========================================================================
+
     private void Awake()
     {
+        // Поиск GameManager, если не назначен
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManager>();
 
@@ -73,7 +82,7 @@ public class UIManager : MonoBehaviour
                 vibikController?.PlayPlayAnimation();
             });
 
-        // Навигация
+        // Кнопки навигации
         if (shopButton != null)
             shopButton.onClick.AddListener(OpenShop);
         if (collectionButton != null)
@@ -83,17 +92,29 @@ public class UIManager : MonoBehaviour
         if (downloadButton != null)
             downloadButton.onClick.AddListener(DownloadApp);
 
+        // [DEMO] Поиск DemoModeManager, если не назначен в инспекторе
+        if (demoModeManager == null)
+            demoModeManager = FindFirstObjectByType<DemoModeManager>();
+
+        // [DEMO] Подписка на событие закрытия демо-диалога
+        if (demoModeManager != null)
+        {
+            demoModeManager.OnDialogClosed += OnDemoDialogClosed;
+        }
+
         UpdateAllUI();
         CloseShop();
         CloseCollection();
-        if (mainPanel != null) mainPanel.SetActive(true);
 
-        // <-- ДОБАВЛЕНО: подсказка дня при старте (сыграет только один раз)
+        if (mainPanel != null)
+            mainPanel.SetActive(true);
+
         VoiceTipsManager.Instance?.PlayTipDay();
     }
 
     private void OnDestroy()
     {
+        // Отписка от событий GameManager
         if (gameManager != null)
         {
             gameManager.OnCoinsChanged -= UpdateCoinsUI;
@@ -101,9 +122,11 @@ public class UIManager : MonoBehaviour
             gameManager.OnPuzzleChanged -= UpdatePuzzleUI;
             gameManager.OnHugCountChanged -= UpdateHugUI;
         }
+
         if (CsvLocalizationManager.Instance != null)
             CsvLocalizationManager.Instance.OnLanguageChanged -= UpdateCoinsUI;
 
+        // Отписка от кнопок
         if (actionFeedButton != null)
             actionFeedButton.onClick.RemoveAllListeners();
         if (actionPlayButton != null)
@@ -116,7 +139,17 @@ public class UIManager : MonoBehaviour
             shareButton.onClick.RemoveAllListeners();
         if (downloadButton != null)
             downloadButton.onClick.RemoveAllListeners();
+
+        // [DEMO] Отписка от события DemoModeManager
+        if (demoModeManager != null)
+        {
+            demoModeManager.OnDialogClosed -= OnDemoDialogClosed;
+        }
     }
+
+    // ========================================================================
+    // Обновление UI
+    // ========================================================================
 
     private void UpdateAllUI()
     {
@@ -193,15 +226,41 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    // ========== НАВИГАЦИЯ ==========
+    // ========================================================================
+    // Навигация
+    // ========================================================================
 
     public void OpenShop()
+    {
+#if VK_DEMO
+        // Демо-версия: показываем диалог вместо магазина
+        if (demoModeManager != null)
+        {
+            demoModeManager.ShowDemoDialog();
+            // Скрываем главную панель, чтобы диалог был поверх
+            if (mainPanel != null)
+                mainPanel.SetActive(false);
+        }
+        else
+        {
+            Debug.LogError("[UIManager] DemoModeManager не назначен! Открываем магазин как запасной вариант.");
+            OpenShopNormal();
+        }
+#else
+        // Полная версия: открываем обычный магазин
+        OpenShopNormal();
+#endif
+    }
+
+    // Вспомогательный метод для открытия магазина (общий код)
+    private void OpenShopNormal()
     {
         if (shopPanel != null)
         {
             shopPanel.SetActive(true);
-            mainPanel?.SetActive(false);
-            VoiceTipsManager.Instance?.PlayTipShop(); // <-- ДОБАВЛЕНО
+            if (mainPanel != null)
+                mainPanel.SetActive(false);
+            VoiceTipsManager.Instance?.PlayTipShop();
         }
     }
 
@@ -210,7 +269,8 @@ public class UIManager : MonoBehaviour
         if (shopPanel != null)
         {
             shopPanel.SetActive(false);
-            mainPanel?.SetActive(true);
+            if (mainPanel != null)
+                mainPanel.SetActive(true);
         }
     }
 
@@ -219,7 +279,8 @@ public class UIManager : MonoBehaviour
         if (collectionPanel != null)
         {
             collectionPanel.SetActive(true);
-            mainPanel?.SetActive(false);
+            if (mainPanel != null)
+                mainPanel.SetActive(false);
         }
     }
 
@@ -228,11 +289,14 @@ public class UIManager : MonoBehaviour
         if (collectionPanel != null)
         {
             collectionPanel.SetActive(false);
-            mainPanel?.SetActive(true);
+            if (mainPanel != null)
+                mainPanel.SetActive(true);
         }
     }
 
-    // ========== СОЦИАЛЬНЫЕ МЕХАНИКИ ==========
+    // ========================================================================
+    // Социальные механики
+    // ========================================================================
 
     private void ShareInVK()
     {
@@ -246,5 +310,19 @@ public class UIManager : MonoBehaviour
     {
         string appUrl = "https://apps.rustore.ru/app/...";
         PlatformService.Instance.OpenAppStore(appUrl);
+    }
+
+    // ========================================================================
+    // [DEMO] Обработчик закрытия демо-диалога
+    // ========================================================================
+
+    /// <summary>
+    /// Вызывается, когда демо-диалог закрывается (через событие OnDialogClosed).
+    /// Показывает главную панель обратно.
+    /// </summary>
+    private void OnDemoDialogClosed()
+    {
+        if (mainPanel != null)
+            mainPanel.SetActive(true);
     }
 }

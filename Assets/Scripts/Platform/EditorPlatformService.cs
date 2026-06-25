@@ -4,63 +4,52 @@ using UnityEngine;
 
 public class EditorPlatformService : IPlatformService
 {
-    public bool IsAuthorized => true;
-    public string PlayerName => "Игрок (Editor)";
-    public string PlayerId => "editor_001";
+    private bool isAuthorized = false;
+    private string playerId = "editor_player";
+    private string playerName = "Editor";
+
+    public bool IsAuthorized => isAuthorized;
+    public string PlayerId => playerId;
+    public string PlayerName => playerName;
+    public bool IsVK => false;
+    public bool IsEditor => true;
+    public bool IsMobile => false;
 
     public event Action OnAuthorizedChanged;
     public event Action OnDataLoaded;
 
-    private Dictionary<string, object> localData = new Dictionary<string, object>();
-
     public void Login(Action<bool> callback)
     {
-        Debug.Log("[EditorPlatformService] Login (always success)");
+        isAuthorized = true;
+        OnAuthorizedChanged?.Invoke();
         callback?.Invoke(true);
-        OnAuthorizedChanged?.Invoke();
-    }
-
-    public void Logout()
-    {
-        Debug.Log("[EditorPlatformService] Logout");
-        OnAuthorizedChanged?.Invoke();
     }
 
     public void SaveGameData(Dictionary<string, object> data)
     {
-        foreach (var kvp in data)
-            localData[kvp.Key] = kvp.Value;
-        Debug.Log("[EditorPlatformService] Data saved locally");
+        Debug.Log("[EditorPlatformService] Saving data in editor (PlayerPrefs)");
+        foreach (var kv in data)
+        {
+            PlayerPrefs.SetString(kv.Key, kv.Value?.ToString() ?? "");
+        }
+        PlayerPrefs.Save();
     }
 
     public void LoadGameData(Action<Dictionary<string, object>> callback)
     {
-        Debug.Log("[EditorPlatformService] Data loaded locally");
-        callback?.Invoke(localData);
-        OnDataLoaded?.Invoke();
+        Debug.Log("[EditorPlatformService] Loading data from editor (PlayerPrefs)");
+        Dictionary<string, object> data = new Dictionary<string, object>();
+        // Здесь можно загрузить известные ключи, но для простоты возвращаем пустой словарь
+        callback?.Invoke(data);
     }
 
-    public void ShowRewardedVideo(Action<bool> callback)
+    public void ShareInVK(string text, string mediaUrl, string link)
     {
-        Debug.Log("[EditorPlatformService] Rewarded video shown (simulated)");
-        callback?.Invoke(true);
+        Debug.Log($"[EditorPlatformService] Share in VK: {text}, {mediaUrl}, {link}");
     }
 
-    public void Purchase(string productId, Action<bool> callback)
+    public void OpenAppStore(string appId)
     {
-        Debug.Log($"[EditorPlatformService] Purchase {productId} (simulated)");
-        callback?.Invoke(true);
-    }
-
-    public void ShareInVK(string text, string imageUrl, string link)
-    {
-        Debug.Log($"[EditorPlatformService] Share in VK: {text}");
-        // В редакторе просто выводим в консоль
-    }
-
-    public void OpenAppStore(string appUrl)
-    {
-        Debug.Log($"[EditorPlatformService] Open App Store: {appUrl}");
-        Application.OpenURL(appUrl);
+        Debug.Log($"[EditorPlatformService] Open App Store: {appId}");
     }
 }

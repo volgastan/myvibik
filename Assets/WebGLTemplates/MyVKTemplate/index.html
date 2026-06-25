@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Мой Вайбик</title>
+    <style>
+        html, body { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; background: #1a1a2e; }
+        #unity-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        #unity-canvas { width: 100vw; height: 100vh; max-width: 100%; max-height: 100%; display: block; background: #1a1a2e; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-family: Arial, sans-serif; font-size: 24px; text-align: center; z-index: 10; }
+    </style>
+</head>
+<body>
+    <div id="unity-container">
+        <div id="loading">Загрузка...</div>
+        <canvas id="unity-canvas" width="1920" height="1080"></canvas>
+    </div>
+
+    <script>
+        // ============================================================
+        // 1. Проверка iframe
+        // ============================================================
+        var isInVKIframe = (window.location !== window.parent.location);
+        console.log('[VK] Находимся в iframe?', isInVKIframe);
+
+        var bridgeReady = false;
+        var bridgeInitialized = false;
+        var unityInstance = null;
+        var pendingVKUserId = null;
+
+        // ============================================================
+        // 2. Инициализация VK Bridge (с опросом)
+        // ============================================================
+        function initVKBridge() {
+            if (bridgeInitialized) return;
+            bridgeInitialized = true;
+
+            if (typeof window.vkBridge !== 'undefined') {
+                doVKInit();
+                return;
+            }
+
+            console.log('[VK] Ожидаем появления window.vkBridge...');
+            var attempts = 0;
+            var maxAttempts = 100; // 10 секунд
+            var interval = setInterval(function() {
+                attempts++;
+                if (typeof window.vkBridge !== 'undefined') {
+                    clearInterval(interval);
+                    console.log('[VK] window.vkBridge появился!');
+                    doVKInit();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    console.warn('[VK] Таймаут ожидания Bridge – работаем офлайн');
+                    notifyUnityBridgeReady(false);
+                }
+            }, 100);
+        }
+
+        function doVKInit() {
+            if (bridgeReady) return;
+            console.log('[VK] Отправляем VKWebAppInit...');
+            window.vkBridge.send('VKWebAppInit', {})
+                .then(function(data) {
+                    console.log('[VK] ✅ VKWebAppInit успешно, data:', data);
+                    bridgeReady = true;
+                    return window.vkBridge.send('VKWebAppGetUserInfo', {});
+                })
+                .then(function(userData) {
+                    console.log('[VK] Данные пользователя:', userData);
+                    if (userData && userData.id) {
+                        var userId = userData.id.toString();
+                        if (unityInstance) {
+                            unityInstance.SendMessage('VkBridgeController', 'SetVKUserId', userId);
+                        } else {
+                            pendingVKUserId = userId;
+                        }
+                    }
+                    notifyUnityBridgeReady(true);
+                })
+                .catch(function(error) {
+                    console.error('[VK] Ошибка инициализации Bridge:', error);
+                    fallbackVKInit();
+                });
+        }
+
+        function fallbackVKInit() {
+            console.log('[VK] Пробуем VK.init (запасной)');
+            if (typeof window.VK !== 'undefined' && typeof window.VK.init === 'function') {
+                try {
+                    window.VK.init({ apiId: 54644253 });
+                    window.VK.Api.call('users.get', { user_ids: '', fields: '' }, function(r) {
+                        if (r && r.response && r.response.length > 0) {
+                            var userId = r.response[0].id;
+                            console.log('[VK] Получен user_id через VK.Api:', userId);
+                            if (unityInstance) {
+                                unityInstance.SendMessage('VkBridgeController', 'SetVKUserId', userId.toString());
+                            } else {
+                                pendingVKUserId = userId;
+                            }
+                            bridgeReady = true;
+                            notifyUnityBridgeReady(true);
+                        } else {
+                            notifyUnityBridgeReady(false);
+                        }
+                    });
+                } catch (e) {
+                    console.error('[VK] Ошибка VK.init:', e);
+                    notifyUnityBridgeReady(false);
+                }
+            } else {
+                console.warn('[VK] VK.init недоступен');
+                notifyUnityBridgeReady(false);
+            }
+        }
+
+        function notifyUnityBridgeReady(ready) {
+            bridgeReady = ready;
+            if (unityInstance) {
+                unityInstance.SendMessage('VkBridgeController', 'OnBridgeReadyFromJS');
+                console.log('[VK] Отправлено OnBridgeReadyFromJS (ready=' + ready + ')');
+            } else {
+                window._pendingBridgeReady = ready;
+            }
+        }
+
+        // Загружаем xd_connection.js только если внутри iframe
+        if (isInVKIframe) {
+            var script = document.createElement('script');
+            script.src = 'https://vk.com/js/api/xd_connection.js';
+            script.onload = function() {
+                console.log('[VK] xd_connection.js загружена');
+                initVKBridge();
+            };
+            script.onerror = function() {
+                console.error('[VK] Не удалось загрузить xd_connection.js');
+                fallbackVKInit();
+            };
+            document.head.appendChild(script);
+        } else {
+            console.warn('[VK] Приложение не в iframe VK – Bridge не будет работать');
+            // Всё равно попробуем инициализировать (на случай, если проверка ошибочна)
+            initVKBridge();
+        }
+
+        // ============================================================
+        // 3. Загрузка Unity (реальные имена файлов)
+        // ============================================================
+        var BUILD_PATH = "Build/";
+        var LOADER_FILE = "93f49830f18c5ce1417dfc059cb6221c.loader.js";
+        var DATA_FILE = "2f95b6676727a1f8d8645adf458406b9.data.gz";
+        var FRAMEWORK_FILE = "894285e8d21b9d7ac3e36fff3e8ceae0.framework.js.gz";
+        var CODE_FILE = "490bd438a8ac22c2e017cf65509038b5.wasm.gz";
+
+        function startUnity() {
+            if (typeof createUnityInstance === 'undefined') {
+                console.warn('[Unity] createUnityInstance не определена, ждём...');
+                setTimeout(startUnity, 200);
+                return;
+            }
+
+            var canvas = document.querySelector("#unity-canvas");
+            var loading = document.getElementById('loading');
+
+            var config = {
+                dataUrl: BUILD_PATH + DATA_FILE,
+                frameworkUrl: BUILD_PATH + FRAMEWORK_FILE,
+                codeUrl: BUILD_PATH + CODE_FILE,
+                streamingAssetsUrl: "StreamingAssets",
+                companyName: "YourCompany",
+                productName: "Мой Вайбик",
+                productVersion: "1.0",
+                autoSyncPersistentDataPath: true
+            };
+
+            createUnityInstance(canvas, config)
+                .then(function(instance) {
+                    loading.style.display = 'none';
+                    unityInstance = instance;
+                    console.log('[Unity] Игра загружена');
+
+                    if (pendingVKUserId) {
+                        instance.SendMessage('VkBridgeController', 'SetVKUserId', pendingVKUserId);
+                        pendingVKUserId = null;
+                    }
+
+                    instance.SendMessage('VkBridgeController', 'OnBridgeReadyFromJS');
+                })
+                .catch(function(err) {
+                    console.error('[Unity] Ошибка загрузки:', err);
+                    loading.textContent = 'Ошибка загрузки. Проверьте консоль.';
+                });
+        }
+
+        // Загружаем скрипт загрузчика
+        var loaderScript = document.createElement('script');
+        loaderScript.src = BUILD_PATH + LOADER_FILE;
+        loaderScript.onload = function() {
+            console.log('[Unity] Загрузчик загружен, запускаем Unity...');
+            startUnity();
+        };
+        loaderScript.onerror = function() {
+            console.error('[Unity] Не удалось загрузить загрузчик:', BUILD_PATH + LOADER_FILE);
+            document.getElementById('loading').textContent = 'Ошибка загрузки игры. Файл не найден.';
+        };
+        document.head.appendChild(loaderScript);
+
+        if (typeof createUnityInstance !== 'undefined') {
+            startUnity();
+        }
+
+        setTimeout(function() {
+            if (!unityInstance) {
+                console.warn('[Unity] Таймаут загрузки Unity (30 сек)');
+                document.getElementById('loading').textContent = 'Долгая загрузка... Проверьте интернет.';
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

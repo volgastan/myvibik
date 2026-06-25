@@ -30,6 +30,7 @@ public class GameManager : MonoBehaviour
 
     private string lastVisitDate = "";
     private int todayCoinsEarned = 0;
+    private bool isBridgeReadyChecked = false;
 
     private void Awake()
     {
@@ -45,12 +46,57 @@ public class GameManager : MonoBehaviour
         }
 
         PuzzlePartsCollected = new bool[totalPuzzleParts];
-        LoadAllData();
     }
 
     private void Start()
     {
-        CheckNewDay();
+        // Используем FindFirstObjectByType (новый API)
+        VkBridgeController bridgeController = FindFirstObjectByType<VkBridgeController>();
+
+        if (bridgeController != null && bridgeController.IsBridgeReady)
+        {
+            // Мост уже готов – сразу логинимся
+            PlatformService.Instance.Login(OnLoginResult);
+        }
+        else if (bridgeController != null)
+        {
+            // Подписываемся на событие готовности
+            bridgeController.OnBridgeReady += () =>
+            {
+                if (!isBridgeReadyChecked)
+                {
+                    isBridgeReadyChecked = true;
+                    PlatformService.Instance.Login(OnLoginResult);
+                }
+            };
+            // Таймаут – если Bridge не стал готов за 5 секунд, всё равно работаем офлайн
+            Invoke(nameof(LoginFallback), 5f);
+        }
+        else
+        {
+            // Контроллера нет – сразу офлайн
+            PlatformService.Instance.Login(OnLoginResult);
+        }
+    }
+
+    private void LoginFallback()
+    {
+        if (!isBridgeReadyChecked)
+        {
+            isBridgeReadyChecked = true;
+            Debug.LogWarning("[GameManager] Таймаут ожидания Bridge – работаем офлайн");
+            PlatformService.Instance.Login(OnLoginResult);
+        }
+    }
+
+    private void OnLoginResult(bool success)
+    {
+        if (success)
+            Debug.Log("[GameManager] Платформа инициализирована успешно");
+        else
+            Debug.LogWarning("[GameManager] Платформа не инициализирована, работаем в офлайн-режиме");
+
+        LoadAllData();
     }
 
     private void LoadAllData()
@@ -70,7 +116,9 @@ public class GameManager : MonoBehaviour
             LoadFromPlayerPrefs();
             Debug.Log("[GameManager] Облачных данных нет, загружено из PlayerPrefs");
         }
+
         ApplyLoadedData();
+        CheckNewDay();
     }
 
     private void LoadFromDictionary(Dictionary<string, object> data)
@@ -181,7 +229,6 @@ public class GameManager : MonoBehaviour
 
     public void PerformAction(string actionType)
     {
-        // Начисляем монету
         if (todayCoinsEarned < maxDailyCoins)
         {
             Coins += coinsPerAction;
@@ -189,12 +236,10 @@ public class GameManager : MonoBehaviour
             OnCoinsChanged?.Invoke();
             SaveAllData();
 
-            // <-- ДОБАВЛЕНО: подсказка о монете (первое получение за день)
             if (todayCoinsEarned == 1)
                 VoiceTipsManager.Instance?.PlayTipCoin();
         }
 
-        // <-- ДОБАВЛЕНО: подсказки для действий (только первый раз)
         if (actionType == "feed")
             VoiceTipsManager.Instance?.PlayTipFeed();
         else if (actionType == "play")
@@ -229,7 +274,7 @@ public class GameManager : MonoBehaviour
         OnPuzzleChanged?.Invoke();
         SaveAllData();
 
-        VoiceTipsManager.Instance?.PlayTipCollection(); // <-- ДОБАВЛЕНО
+        VoiceTipsManager.Instance?.PlayTipCollection();
 
         bool allCollected = true;
         for (int i = 0; i < PuzzlePartsCollected.Length; i++)

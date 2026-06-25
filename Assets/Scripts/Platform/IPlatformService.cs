@@ -3,21 +3,22 @@ using System.Collections.Generic;
 
 public interface IPlatformService
 {
+    // Свойства
     bool IsAuthorized { get; }
-    string PlayerName { get; }
     string PlayerId { get; }
+    string PlayerName { get; }
+    bool IsVK { get; }
+    bool IsEditor { get; }
+    bool IsMobile { get; }
 
-    void Login(Action<bool> callback);
-    void Logout();
-
-    void SaveGameData(Dictionary<string, object> data);
-    void LoadGameData(Action<Dictionary<string, object>> callback);
-
-    void ShowRewardedVideo(Action<bool> callback);
-    void Purchase(string productId, Action<bool> callback);
-    void ShareInVK(string text, string imageUrl, string link);
-    void OpenAppStore(string appUrl); // для кнопки "Скачать в RuStore"
-
+    // События (без параметров)
     event Action OnAuthorizedChanged;
     event Action OnDataLoaded;
+
+    // Методы
+    void Login(Action<bool> callback);
+    void SaveGameData(Dictionary<string, object> data);
+    void LoadGameData(Action<Dictionary<string, object>> callback);
+    void ShareInVK(string text, string mediaUrl, string link);
+    void OpenAppStore(string appId);
 }

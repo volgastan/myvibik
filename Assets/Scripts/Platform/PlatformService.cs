@@ -2,25 +2,31 @@ using UnityEngine;
 
 public static class PlatformService
 {
-    private static IPlatformService _instance;
+    private static IPlatformService instance;
 
     public static IPlatformService Instance
     {
         get
         {
-            if (_instance == null)
+            if (instance == null)
             {
-                #if UNITY_EDITOR
-                    _instance = new EditorPlatformService();
-                #elif UNITY_WEBGL && !UNITY_EDITOR
-                    _instance = new VKPlatformService();
-                #elif UNITY_ANDROID && !UNITY_EDITOR
-                    _instance = new RuStorePlatformService();
-                #else
-                    _instance = new EditorPlatformService();
-                #endif
+#if VK_DEMO
+                // В демо-версии используем локальное сохранение
+                instance = new LocalPlatformService();
+#else
+                // В полной версии – облачное с фолбэком
+                instance = new CloudPlatformService();
+#endif
             }
-            return _instance;
+            return instance;
         }
+    }
+
+    public static void Initialize()
+    {
+        Instance.Login((success) =>
+        {
+            Debug.Log($"[PlatformService] Инициализация: {(success ? "успешно" : "не удалась")}");
+        });
     }
 }
