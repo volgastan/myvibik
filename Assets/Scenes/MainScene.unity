@@ -256,6 +256,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 90301611}
   m_CullTransparentMesh: 1
+--- !u!1 &108031155
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 108031156}
+  m_Layer: 0
+  m_Name: RuStoreManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &108031156
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 108031155}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 135.88747, y: 565.8484, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &109925211
 GameObject:
   m_ObjectHideFlags: 0
@@ -4891,7 +4922,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: -8030570891474961867, guid: 7ada8723b67544a44968f6567337fd9c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -5040,7 +5071,7 @@ MonoBehaviour:
   characterImage: {fileID: 2049855596}
   phraseText: {fileID: 2070068355}
   audioSource: {fileID: 2049855599}
-  characterData: {fileID: 11400000, guid: c70962e993e0ac949911352d2699ec66, type: 2}
+  characterData: {fileID: 11400000, guid: ffdef633c5aede74b9a8fe4c31ffa7e0, type: 2}
   actionDuration: 1.5
   hugDuration: 2.5
   idlePhraseDelay: 8
@@ -5078,7 +5109,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 250}
+  m_AnchoredPosition: {x: 0, y: 340}
   m_SizeDelta: {x: 400, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2070068355
@@ -5452,3 +5483,4 @@ SceneRoots:
   - {fileID: 1862322619}
   - {fileID: 2077954790}
   - {fileID: 1123941959}
+  - {fileID: 108031156}

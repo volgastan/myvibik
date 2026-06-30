@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa4a026c81998ef4e804a02dbe8042da, type: 3}
+  m_Name: SplashData
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  characterName: Splash
+  nameKey: 
+  idleSprite: {fileID: -8030570891474961867, guid: 7ada8723b67544a44968f6567337fd9c, type: 3}
+  idleAnimationFrames: []
+  blinkSprite: {fileID: 0}
+  happySprites: []
+  eatSprites: []
+  playSprites: []
+  hugSprites: []
+  happySounds: []
+  eatSounds:
+  - {fileID: 8300000, guid: e41e62725f518b0469948d47a8693c7a, type: 3}
+  - {fileID: 8300000, guid: eb63c7df4a532654aad5d404937f27b8, type: 3}
+  - {fileID: 8300000, guid: cf10c644474545c43806752857580e2f, type: 3}
+  playSounds:
+  - {fileID: 8300000, guid: 45e8e7cf4fee1b144b234da811ca60fe, type: 3}
+  - {fileID: 8300000, guid: 68cad3b957262af429061ba23127a9e6, type: 3}
+  - {fileID: 8300000, guid: b1509454df9122a438eff09a2ce8d6e9, type: 3}
+  hugSounds:
+  - {fileID: 8300000, guid: 4e17754c2a1654e45b4367542f586bfd, type: 3}
+  - {fileID: 8300000, guid: a8148d9bd0c75cc4b878e993863b49cf, type: 3}
+  - {fileID: 8300000, guid: 68ccdcaf29ad35741999df603cd4706a, type: 3}
+  - {fileID: 8300000, guid: 1153f1d5a8b020b49bd0b82227eb2700, type: 3}
+  idleSounds:
+  - {fileID: 8300000, guid: 2abb3b7371fa08c44a22e079acde73fb, type: 3}
+  - {fileID: 8300000, guid: c15e94922063bef46a165cb6c4a11ee4, type: 3}
+  - {fileID: 8300000, guid: 62b80f4996c6efc4f84c44943db08212, type: 3}
+  happyPhrases:
+  - phrase_happy_1
+  - phrase_happy_2
+  - phrase_happy_3
+  eatPhrases:
+  - phrase_eat_1
+  - phrase_eat_2
+  - phrase_eat_3
+  playPhrases:
+  - phrase_play_1
+  - phrase_play_2
+  - phrase_play_3
+  hugPhrases:
+  - phrase_hug_1
+  - phrase_hug_2
+  - phrase_hug_3
+  - phrase_hug_4
+  idlePhrases:
+  - idle_tip_hug
+  - idle_tip_feed
+  - idle_tip_play
+  - idle_tip_puzzle
+  - idle_tip_friend
+  - idle_tip_coins
+  - idle_tip_shop
+  - idle_love_1
+  - idle_love_2
+  - idle_play_offer

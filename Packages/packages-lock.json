@@ -283,6 +283,20 @@
       },
       "url": "https://packages.unity.com"
     },
+    "ru.rustore.core": {
+      "version": "file:C:/Users/admin/Downloads/ru.rustore.core-10.5.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {}
+    },
+    "ru.rustore.pay": {
+      "version": "file:C:/Users/admin/Downloads/ru.rustore.pay-10.5.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {
+        "ru.rustore.core": "10.5.0"
+      }
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
